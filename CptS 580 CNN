@@ -1,0 +1,64 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+import tensorflow as tf
+from tensorflow.keras import layers, models
+
+# Load the dataset
+data = pd.read_csv('fer2013.csv')
+
+# Extract features and labels
+X = np.array(data['pixels'].str.split(' ').tolist(), dtype='float32')
+y = data['emotion'].values
+
+# Normalize pixel values
+X = X / 255.0
+
+# Reshape for CNN input (grayscale images of 48x48)
+X = X.reshape(-1, 48, 48, 1)
+
+# Split the dataset
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Build the CNN model
+model = models.Sequential([
+    layers.Conv2D(32, (3, 3), activation='relu', input_shape=(48, 48, 1)),
+    layers.MaxPooling2D((2, 2)),
+    layers.Conv2D(64, (3, 3), activation='relu'),
+    layers.MaxPooling2D((2, 2)),
+    layers.Conv2D(128, (3, 3), activation='relu'),
+    layers.MaxPooling2D((2, 2)),
+    layers.Flatten(),
+    layers.Dense(128, activation='relu'),
+    layers.Dense(7, activation='softmax')  # 7 classes for emotions
+])
+
+# Compile the model
+model.compile(optimizer='adam',
+              loss='sparse_categorical_crossentropy',
+              metrics=['accuracy'])
+
+# Train the model
+history = model.fit(X_train, y_train, epochs=30, batch_size=64, validation_split=0.2)
+
+# Evaluate the model
+test_loss, test_accuracy = model.evaluate(X_test, y_test)
+print(f'Test accuracy: {test_accuracy:.2f}')
+
+# Make predictions
+predictions = model.predict(X_test)
+predicted_classes = np.argmax(predictions, axis=1)
+
+# Function to visualize results
+def plot_images(images, labels, predicted_labels=None):
+    plt.figure(figsize=(12, 6))
+    for i in range(10):
+        plt.subplot(2, 5, i + 1)
+        plt.imshow(images[i].reshape(48, 48), cmap='gray')
+        plt.title(f'True: {labels[i]}' + (f'\nPred: {predicted_labels[i]}' if predicted_labels is not None else ''))
+        plt.axis('off')
+    plt.show()
+
+# Visualize predictions
+plot_images(X_test, y_test, predicted_classes)
