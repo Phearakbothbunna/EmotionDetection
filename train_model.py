@@ -1,26 +1,7 @@
 import numpy as np
 import tensorflow as tf
 from matplotlib import pyplot as plt
-from sklearn.model_selection import train_test_split
-
-
-# load the saved preprocessed data
-preprocess_train_imgs = np.load('preprocessed_train_imgs.npy')
-train_labels = np.load('train_labels.npy')
-preprocess_test_imgs = np.load('preprocessed_test_imgs.npy')
-test_labels = np.load('test_labels.npy')
-
-# split training data into train and validation sets
-train_imgs, val_imgs, train_labels, val_labels = train_test_split(
-    preprocess_train_imgs, train_labels, test_size=0.2, random_state=42)
-
-# add the dimensions to include the channel axis (at the end of array)
-# this ensures that all images has the shape required by the CNN model
-# new shape will be: (num_samples, h, w, 1)
-# 1 represents the single grayscale channel
-train_imgs = np.expand_dims(train_imgs, axis=-1)
-val_imgs = np.expand_dims(val_imgs, axis=-1)
-test_imgs = np.expand_dims(preprocess_test_imgs, axis=-1)
+from prepare_data import reverse_label_map
 
 # build the cnn model
 # we are using sequential model so we can add 1 layer at a time in order
@@ -53,7 +34,6 @@ def create_cnn_model():
                   loss='sparse_categorical_crossentropy',
                   metrics=['accuracy'])
     return model
-model = create_cnn_model()
 
 # function to train the CNN model on training and validation data
 def train_model(model, train_imgs, train_labels, val_imgs, val_labels):
@@ -64,15 +44,12 @@ def train_model(model, train_imgs, train_labels, val_imgs, val_labels):
     # return the object that has info about the training process
     # it keeps track of loss value, accuracy, validation and validation accuracy
     return train_logs
-# train the model
-train_logs = train_model(model, train_imgs, train_labels, val_imgs, val_labels)
 
 # For testing data: evaluate CNN model's performance
 def evaluate_model(model, test_imgs, test_labels):
     test_loss, test_accuracy = model.evaluate(test_imgs, test_labels)
     # print the test accuracy
     print(f'Test accuracy: {test_accuracy:.2f}')
-evaluate_model(model, test_imgs, test_labels)
 
 # Display the testing images (10 of them) with the true & predicted labels
 def plot_images(images, labels, predicted_labels=None):
@@ -86,12 +63,13 @@ def plot_images(images, labels, predicted_labels=None):
         plt.subplot(4, 5, i + 1)
         # display images in grayscale
         plt.imshow(images[idx].reshape(48, 48), cmap='gray')
-        plt.title(f'True: {labels[idx]}' + (f'\nPred: {predicted_labels[idx]}' if predicted_labels is not None else ''))
+        true_label = reverse_label_map[labels[rand_indices[i]]]
+        title = f'True: {true_label}'
+        if predicted_labels is not None:
+            predicted_label = reverse_label_map[predicted_labels[rand_indices[i]]]
+            title += f'\nPred: {predicted_label}'
+        plt.title(title)
         plt.axis('off')
     plt.show()
-# make predictions on the testing images
-predictions = model.predict(test_imgs)
-# convert prediction probabilities to class labels
-predicted_classes = np.argmax(predictions, axis=1)
-# visualize the testing predictions
-plot_images(test_imgs, test_labels, predicted_classes)
+
+
