@@ -51,7 +51,7 @@ def evaluate_model(model, test_imgs, test_labels):
     # print the test accuracy
     print(f'Test accuracy: {test_accuracy:.2f}')
 
-# Display the testing images (10 of them) with the true & predicted labels
+# Display the testing images (20 of them) with the true & predicted labels
 def plot_images(images, labels, predicted_labels=None):
     # randomly select 20 indices to get random images
     rand_indices = np.random.choice(len(images), 20, replace=False)
